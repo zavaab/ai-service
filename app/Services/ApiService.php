@@ -45,8 +45,8 @@ class ApiService
                 return false;
                 echo 'JSON Decoding Error: ' . json_last_error_msg();
             } else {
-                $decodedResponse['id'] = rand(1,100);
-                $decodedResponse['status'] = 200;
+                // $decodedResponse['id'] = rand(1,100);
+                // $decodedResponse['status'] = 200;
                 return $decodedResponse;
             }
         }

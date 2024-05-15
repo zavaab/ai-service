@@ -23,6 +23,8 @@ Route::group(['namespace' => 'Api', 'prefix' => 'v1'], function () {
     Route::post('login', [AuthenticationController::class, 'store']);
     Route::post('logout', [AuthenticationController::class, 'destroy'])->middleware('auth:api');
     
-    Route::post('ai-send', [AiController::class, 'store'])->middleware('auth:api');
-    Route::post('ai-result', [AiController::class, 'result'])->middleware('auth:api');
+    // Route::post('ai-send', [AiController::class, 'store'])->middleware('auth:api');
+    // Route::post('ai-result', [AiController::class, 'result'])->middleware('auth:api');
+    Route::post('ai-send', [AiController::class, 'store']);
+    Route::post('ai-result', [AiController::class, 'result']);
   });

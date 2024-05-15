@@ -51,7 +51,7 @@ class AiController extends Controller
                 $params['category'] = $categoryData['categoryId'];
                 $res = $apiService->sendApiRequest($params);
                 
-                if( isset($res['id']) && (isset($res['status']) && $res['status'] == 200 )  ){
+                if( isset($res['id']) && (isset($res['status']) && $res['status'] == "616" )  ){
                     $visit = VisitsAi::updateOrCreate(
                         [
                             'visit_id' => $visitId,
@@ -73,7 +73,7 @@ class AiController extends Controller
         }
 
         if(!$error)
-              return response()->json(['result' => 'Data submitted successfully' , 'code' => 200 ], 200);  
+              return response()->json(['result' => 'Data submitted successfully' , 'code' => 616 ], 200);  
 
         
     }
@@ -160,7 +160,7 @@ class AiController extends Controller
             WHERE va.visit_id = '.$request->visitId.' COLLATE utf8mb4_unicode_ci;');
             return response()->json(
                 [
-                'code' => 200,
+                'code' => 616,
                 'status' => ($status_visit_id != 0 ) ?  'pending' : 'Done',
                 'visit_id' => $request->visitId,
                 'products' => $res
