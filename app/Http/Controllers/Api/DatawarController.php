@@ -23,13 +23,17 @@ class DatawarController extends Controller
         ]);
         $user_key = $request->user_key;
         $shop_key = $request->shop_key;
-        $results = DB::select( DB::raw("SELECT * FROM [dbo].[CallToRout] (".$user_key.",".$shop_key.")") );
-        dd($results);
-        // $resultArray = json_decode(json_encode($results), true);
-        return response()->json(
-            [
-            'result' => $results,
-         ], 200);
+
+
+        try {
+            $res = DB::connection('sqlsrv')->select('SELECT * FROM [dbo].[CallToRout](?,?)', [$user_key, $shop_key])[0];
+            return response()->json(
+                [
+                'result' => $res,
+             ], 200);
+        } catch (\Exception $e) {
+            dd($e->getMessage()); // Output the error message for debugging
+        }
 
         
 
