@@ -16,7 +16,7 @@ class ApiService
 
         $curl = curl_init();
         curl_setopt_array($curl, array(
-            CURLOPT_URL => 'http://89.42.211.18:5700/grab/',
+            CURLOPT_URL => 'http://192.168.157.6:5700/grab/',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_SSL_VERIFYHOST => false,
@@ -60,7 +60,7 @@ class ApiService
         
         $curl = curl_init();
         curl_setopt_array($curl, array(
-            CURLOPT_URL => 'http://89.42.211.18:5700/detection/',
+            CURLOPT_URL => 'http://192.168.157.6:5700/detection/',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_SSL_VERIFYHOST => false,

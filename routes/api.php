@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthenticationController;
 use App\Http\Controllers\Api\AiController;
+use App\Http\Controllers\Api\DatawarController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -27,4 +28,8 @@ Route::group(['namespace' => 'Api', 'prefix' => 'v1'], function () {
     // Route::post('ai-result', [AiController::class, 'result'])->middleware('auth:api');
     Route::post('ai-send', [AiController::class, 'store']);
     Route::post('ai-result', [AiController::class, 'result']);
+
+    
+    Route::get('call-to-rout', [DatawarController::class, 'calltorout']);
+
   });
