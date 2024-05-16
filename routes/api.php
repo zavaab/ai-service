@@ -30,6 +30,6 @@ Route::group(['namespace' => 'Api', 'prefix' => 'v1'], function () {
     Route::post('ai-result', [AiController::class, 'result']);
 
     
-    Route::get('call-to-rout', [DatawarController::class, 'calltorout']);
+    Route::post('call-to-rout', [DatawarController::class, 'calltorout']);
 
   });
