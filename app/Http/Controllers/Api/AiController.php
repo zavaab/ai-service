@@ -201,13 +201,13 @@ class AiController extends Controller
                  ], 200);
             }
 
+            // -- va.status,
+            // -- err.description
             $res = DB::select('SELECT 
             h.product_id ,
             va.category_id,
             var.count,
-            var.`code`,
-            -- va.status,
-            -- err.description
+            var.`code`
             FROM visits_ai va LEFT JOIN visits_ai_results var ON va.id = var.visits_ai_id  LEFT JOIN henkel h ON var.`code` COLLATE utf8mb4_unicode_ci = h.`code` 
             LEFT JOIN error_description err ON va.`status` = err.`error_number`
             WHERE va.visit_id = '.$request->visitId.' COLLATE utf8mb4_unicode_ci AND h.product_id IS NOT NULL ;');
