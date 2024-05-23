@@ -51,7 +51,7 @@ class AiController extends Controller
                 $params['category'] = $categoryData['categoryId'];
                 $res = $apiService->sendApiRequest($params);
                 
-                if( isset($res['id']) && (isset($res['status']) && $res['status'] == "616" )  ){
+                if( isset( $res['id']) && (isset($res['status']) && $res['status'] == "616" )  ){
                     $visit = VisitsAi::updateOrCreate(
                         [
                             'visit_id' => $visitId,
@@ -59,21 +59,49 @@ class AiController extends Controller
                             'ai_id' => $res['id'],
                             'name' => $image['name'],
                             'url' => $image['url'],
-                            'status' => 'pending',
+                            'status' => $res['status'], //for example : 616 success
                         ]
                     );
  
-                $error = false;
-                }else{
-                    return response()->json(['result' =>  $res['result'] , 'code' => 500 ], 500);  
+              
+                }else if( isset($res['status']) ){
+                    $visit = VisitsAi::updateOrCreate(
+                        [
+                            'visit_id' => $visitId,
+                            'category_id' => $categoryData['categoryId'],
+                            'ai_id' => '' ,
+                            'name' => $image['name'],
+                            'url' => $image['url'],
+                            'status' => $res['status'], //for example : 601 = Cant get image from inserted url
+                        ]
+                    );
+                
+                }
+                else{
+                    VisitsAi::where('visit_id', $visitId)->delete();
+                    // return response()->json(['result' =>  'UnknowError' , 'code' => 404 ], 404); 
+                    
+                    return response()->json(
+                        [
+                        'status' => 'unknowError',
+                        'visit_id' => $request->visitId,
+                        'msg' => 'Unknow Error, Deleted VisitId: '.$visitId,
+                     ], 200);
+
                 }
                 
             }
             
         }
 
-        if(!$error)
-              return response()->json(['result' => 'Data submitted successfully' , 'code' => 616 ], 200);  
+        return response()->json(
+            [
+            'status' => 'Success',
+            'visit_id' => $request->visitId,
+            'msg' => 'Data submitted successfully',
+         ], 200);
+
+        return response()->json(['result' => 'Data submitted successfully' , 'code' => 616 ], 200);  
 
         
     }
@@ -94,7 +122,7 @@ class AiController extends Controller
 
         $results = DB::table('visits_ai')
             ->where('visits_ai.visit_id', '=', $request->visitId)
-            ->where('status','pending')
+            ->where('status','616')
             ->select(
                 'visits_ai.id',
                 'visits_ai.ai_id',
@@ -148,25 +176,65 @@ class AiController extends Controller
             // WHERE va.visit_id = '.$request->visitId.' COLLATE utf8mb4_unicode_ci;');
             
             
-            $status_visit_id = VisitsAi::WHERE('status' , 'pending')->where('visit_id',$request->visitId)->count();
+            $status_visit_id_detected = VisitsAi::where( 'status' , '612' )->where( 'visit_id' , $request->visitId )->count();
+            $status_visit_id_failed = VisitsAi::where( 'status' , '<>' ,  '612' )->where( 'status' , '<>' ,  '616' )->where( 'visit_id' , $request->visitId )->count();
+            $status_visit_id_pending = VisitsAi::where( 'status' ,  '616' )->where( 'visit_id' , $request->visitId )->count();
+            $status_visit_id_all = VisitsAi::where( 'visit_id' , $request->visitId )->count();
+           
  
+            if($status_visit_id_failed == $status_visit_id_all ){
+                return response()->json(
+                    [
+                    'status' => 'Failed',
+                    'visit_id' => $request->visitId,
+                    'products' => [],
+                    'msg' => ''
+                 ], 200);
+            }
+            if($status_visit_id_pending != 0){
+                return response()->json(
+                    [
+                    'status' => 'Pending',
+                    'visit_id' => $request->visitId,
+                    'products' => [],
+                    'msg' => ''
+                 ], 200);
+            }
+
             $res = DB::select('SELECT 
             h.product_id ,
             va.category_id,
             var.count,
             var.`code`,
-            va.status,
-            err.description
+            -- va.status,
+            -- err.description
             FROM visits_ai va LEFT JOIN visits_ai_results var ON va.id = var.visits_ai_id  LEFT JOIN henkel h ON var.`code` COLLATE utf8mb4_unicode_ci = h.`code` 
             LEFT JOIN error_description err ON va.`status` = err.`error_number`
-            WHERE va.visit_id = '.$request->visitId.' COLLATE utf8mb4_unicode_ci;');
+            WHERE va.visit_id = '.$request->visitId.' COLLATE utf8mb4_unicode_ci AND h.product_id IS NOT NULL ;');
+
+            if( $status_visit_id_detected != 0 ){
+                return response()->json(
+                    [
+                    'status' => 'Done',
+                    'visit_id' => $request->visitId,
+                    'products' => $res,
+                    'msg' => ''
+                 ], 200);         
+            }
+
             return response()->json(
                 [
-                'code' => 616,
-                'status' => ($status_visit_id != 0 ) ?  'pending' : 'Done',
+                'status' => 'Unknown',
                 'visit_id' => $request->visitId,
-                'products' => $res
-             ], 200);
+                'products' => [],
+                'msg' => ''
+             ], 200); 
+            // return response()->json(
+            //     [
+            //     'status' => ($status_visit_id != 0 ) ?  'pending' : 'Done',
+            //     'visit_id' => $request->visitId,
+            //     'products' => $res
+            //  ], 200);
 
 
     }
