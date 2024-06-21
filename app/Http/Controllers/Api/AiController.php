@@ -182,7 +182,7 @@ class AiController extends Controller
             $status_visit_id_all = VisitsAi::where( 'visit_id' , $request->visitId )->count();
            
  
-            if($status_visit_id_failed == $status_visit_id_all ){
+            if($status_visit_id_failed){
                 return response()->json(
                     [
                     'status' => 'Failed',
