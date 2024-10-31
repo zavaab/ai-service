@@ -126,7 +126,7 @@ class AiController extends Controller
                     ]);
     
                     Log::info('ai_id received successfully from api', [
-                        'visitId' => $this->visitId,
+                        'visitId' => $record->visit_id,
                         'ai_id' => $res['id'],
                         'status' => $res['status']
                     ]);
@@ -140,10 +140,11 @@ class AiController extends Controller
                         'visitId' => $this->visitId,
                         'status' => $res['status']
                     ]);
-                } else {
-                    VisitsAi::where('visit_id', $this->visitId)->delete();
-                    Log::error('Unknown error, records deleted for visit_id: ' . $this->visitId);
-                }
+                } 
+                // else {
+                    #VisitsAi::where('visit_id', $record->visit_id)->delete();
+                    #Log::error('Unknown error, records deleted for visit_id: ' . $record->visit_id);
+                // }
             }
             
         }
