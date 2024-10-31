@@ -9,5 +9,5 @@ class VisitsAi extends Model
 {
     use HasFactory;
     protected $table = 'visits_ai';
-    protected $fillable = ['visit_id','category_id','ai_id','name','url','status'];
+    protected $fillable = ['visit_id','category_id','ai_id','name','url','status','category_id_map'];
 }

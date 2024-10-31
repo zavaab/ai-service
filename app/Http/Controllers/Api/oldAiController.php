@@ -10,8 +10,6 @@ use App\Models\VisitsAi;
 use App\Models\VisitsAiResult;
 use App\Services\ApiService;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
-
 
 use Illuminate\Support\Facades\DB;
 
@@ -23,29 +21,39 @@ class AiController extends Controller
     
     public function store(Request $request)
     {
-
          
-        $validator = Validator::make($request->all(), [
-            'visitId' => 'required|numeric',
-            'categories' => 'required|array',
-            'categories.*.categoryId' => 'required|numeric',
-            'categories.*.images' => 'required|array',
-            'categories.*.images.*.name' => 'required|string',
-            'categories.*.images.*.url' => 'required|url',
-        ]);
-    
-        // اگر اعتبارسنجی ناموفق بود، پیام خطا 
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+  
+           $validatedData = $request->validate([
+        'visitId' => 'required|numeric',
+        'categories' => 'required|array',
+        'categories.*.categoryId' => 'required|numeric',
+        'categories.*.images' => 'required|array',
+        'categories.*.images.*.name' => 'required|string',
+        'categories.*.images.*.url' => 'required|url',
+    ]);
 
+    // Log the validated request data
+    Log::info('Request validated successfully', [
+        'visitId' => $validatedData['visitId'],
+        'categories' => $validatedData['categories']
+    ]);
+
+
+        //$request->validate([
+         //   'visitId' => 'required|numeric',
+           // 'categories' => 'required|array',
+            //'categories.*.categoryId' => 'required|numeric',
+            //'categories.*.images' => 'required|array',
+            //'categories.*.images.*.name' => 'required|string',
+            //'categories.*.images.*.url' => 'required|url',
+       // ]);
+
+       // Log::info('Request after validated successfully', [
+       // 'visitId' => $validatedData['visitId'],
+        //'categories' => $validatedData['categories']
+        // ]);
 
         $visitId = $request->visitId;
- 
         $error = true ;
         // Loop through categories and images
         
@@ -71,21 +79,74 @@ class AiController extends Controller
              
         }
 
+
+  
+
  
         foreach ($request->categories as $categoryData) {
+           
             foreach ($categoryData['images'] as $image) {
-                VisitsAi::create([
-                    'visit_id' => $request->visitId,
-                    'category_id' => $categoryData['categoryId'],
-                    'category_id_map' => array_key_exists($categoryData['categoryId'], $cat_map) ? $cat_map[$categoryData['categoryId']] : $categoryData['categoryId'],
-                    'name' => $image['name'],
-                    'url' => $image['url'],
-                    'status' => 'pending',
-                ]);
+                $apiService = new ApiService();
+                $params['image_url'] = $image['url'];
+                $params['category'] = array_key_exists($categoryData['categoryId'], $cat_map) ? $cat_map[$categoryData['categoryId']] : $categoryData['categoryId']; //$categoryData['categoryId'];
+                $res = $apiService->sendApiRequest($params);
+                
+                if( isset( $res['id']) && (isset($res['status']) && $res['status'] == "616" )  ){
+
+                     Log::info('ai_id received successfully from ai', [
+                         'visitId' => $visitId,
+                         'ai_id' => $res['id'],
+			 'status' => $res['status']
+                         ]);
+                   
+                    $visit = VisitsAi::updateOrCreate(
+                        [
+                            'visit_id' => $visitId,
+                            'category_id' => $categoryData['categoryId'],
+			    'category_id_map' => array_key_exists($categoryData['categoryId'], $cat_map) ? $cat_map[$categoryData['categoryId']] : $categoryData['categoryId'],
+                            'ai_id' => $res['id'],
+                            'name' => $image['name'],
+                            'url' => $image['url'],
+                            'status' => $res['status'], //for example : 616 success
+                        ]
+                    );
+ 
+              
+                }else if( isset($res['status']) ){
+		     Log::info('ai_id not received from ai', [
+                         'visitId' => $visitId,
+                         'ai_id' => '',
+                         'status' => $res['status']
+                         ]);
+                    $visit = VisitsAi::updateOrCreate(
+                        [
+                            'visit_id' => $visitId,
+                            'category_id' => $categoryData['categoryId'],
+                            'category_id_map' => array_key_exists($categoryData['categoryId'], $cat_map) ? $cat_map[$categoryData['categoryId']] : $categoryData['categoryId'],
+                            'ai_id' => '0' ,
+                            'name' => $image['name'],
+                            'url' => $image['url'],
+                            'status' => $res['status'], //for example : 601 = Cant get image from inserted url
+                        ]
+                    );
+                
+                }
+                else{
+                    VisitsAi::where('visit_id', $visitId)->delete();
+                    // return response()->json(['result' =>  'UnknowError' , 'code' => 404 ], 404); 
+                    
+                    return response()->json(
+                        [
+                        'status' => 'unknowError',
+                        'visit_id' => $request->visitId,
+                        'msg' => 'Unknow Error, Deleted VisitId: '.$visitId,
+                     ], 200);
+
+                }
+                
             }
+            
         }
-
-
 
         return response()->json(
             [
@@ -95,59 +156,6 @@ class AiController extends Controller
          ], 200);
 
         return response()->json(['result' => 'Data submitted successfully' , 'code' => 616 ], 200);  
-
-        
-    }
-
-
-    public function sendToAi(){
-        $apiService = new ApiService();
-        
-        $nextVisitId = VisitsAi::where('status', 'pending')
-            ->select('visit_id')
-            ->distinct()
-            ->orderBy('visit_id')
-            ->first();
-
-        if ($nextVisitId) {
-            $records = VisitsAi::where('status', 'pending')
-                ->where('visit_id', $nextVisitId->visit_id)
-                ->get();
-
-            foreach ($records as $record) {
-                $params['image_url'] = $record->url;
-                $params['category'] = $record->category_id_map;
-                $res = $apiService->sendApiRequest($params);
-    
-                if (!empty($res['id']) && isset($res['status']) && $res['status'] == "616") {
-                    $record->update([
-                        'ai_id' => $res['id'],
-                        'status' => $res['status'],
-                    ]);
-    
-                    Log::info('ai_id received successfully from api', [
-                        'visitId' => $this->visitId,
-                        'ai_id' => $res['id'],
-                        'status' => $res['status']
-                    ]);
-                } else if (isset($res['status'])) {
-                    $record->update([
-                        'ai_id' => '0',
-                        'status' => $res['status'],
-                    ]);
-    
-                    Log::info('ai_id not received from api', [
-                        'visitId' => $this->visitId,
-                        'status' => $res['status']
-                    ]);
-                } else {
-                    VisitsAi::where('visit_id', $this->visitId)->delete();
-                    Log::error('Unknown error, records deleted for visit_id: ' . $this->visitId);
-                }
-            }
-            
-        }
-
 
         
     }

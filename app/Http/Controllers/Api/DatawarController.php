@@ -27,11 +27,31 @@ class DatawarController extends Controller
         
         
                 try {
-                    $res = DB::connection('sqlsrv')->select('SELECT * FROM [dbo].[CallToRout](?,?)', [$user_key, $shop_key])[0];
-                    return response()->json(
+                    $res = DB::connection('sqlsrv')->select('SELECT * FROM [dbo].[CallToRout](?,?)', [$user_key, $shop_key]);
+
+if (!empty($res)) {
+    // Data exists
+    $data = $res[0];
+return response()->json(
                         [
-                        'result' => $res,
+                        'result' => $res[0],
                      ], 200);
+
+    // You can now use $data as needed
+} else {
+ return response()->json(
+                        [
+                        'result' => ['CallRout' => '0' , 'CntVis' => '0' , 'CntRt' => '0' ],
+                     ], 200);
+
+    // Data does not exist
+    // Handle the case when no data is found
+}
+
+                   //return response()->json(
+                     //   [
+                       // 'result' => $res,
+                     //], 200);
                 } catch (\Exception $e) {
                     dd($e->getMessage()); // Output the error message for debugging
                 }
