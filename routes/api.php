@@ -31,5 +31,6 @@ Route::group(['namespace' => 'Api', 'prefix' => 'v1'], function () {
 
     
     Route::get('call-to-rout', [DatawarController::class, 'calltorout']);
+    Route::get('call-to-routs', [DatawarController::class, 'calltorout1']);
 
   });
