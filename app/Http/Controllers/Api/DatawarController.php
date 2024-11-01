@@ -13,6 +13,57 @@ use Illuminate\Support\Facades\Validator;
 class DatawarController extends Controller
 {
     
+
+    public function calltorout1(Request $request)
+    {
+    $validator = Validator::make($request->all(), [
+        'user_key' => 'required|numeric',
+        'shop_key' => 'required|array',
+        'shop_key.*' => 'numeric'
+    ]);
+
+    if (!$validator->fails()) {
+        $user_key = $request->user_key;
+        $shop_keys = $request->shop_key; // Expecting an array
+
+        try {
+            // Convert shop_keys array to a string for the SQL query
+            $placeholders = implode(',', array_fill(0, count($shop_keys), '?'));
+
+            // Prepare and execute the query with IN clause
+            $res = DB::connection('sqlsrv')->select(
+                "SELECT CallRout, CntVis, CntRt FROM CallRout WHERE UserKey = ? AND ShopKey IN ($placeholders)", 
+                array_merge([$user_key], $shop_keys)
+            );
+
+            if (!empty($res)) {
+                // Data exists
+                return response()->json(['result' => $res], 200);
+            } else {
+                // No data found for the given shop_keys
+                return response()->json(
+                    [
+                        'result' => [
+                            'CallRout' => '0',
+                            'CntVis' => '0',
+                            'CntRt' => '0'
+                        ]
+                    ],
+                    200
+                );
+            }
+
+        } catch (\Exception $e) {
+            // Output the error message for debugging
+            dd($e->getMessage());
+        }
+
+    } else {
+        return $validator->errors();
+    }
+}
+
+
     
     public function calltorout(Request $request)
     {
